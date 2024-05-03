@@ -3,6 +3,7 @@ const cors = require("cors");
 const app = express();
 require("dotenv").config();
 const port = process.env.PORT || 5000;
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
 app.use(cors());
@@ -14,7 +15,6 @@ app.get("/", (req, res) => {
 
 // ! mongoo DB
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_Password}@cluster0.esfshrg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -35,7 +35,25 @@ async function run() {
 
     // ! data
     app.get("/products", async (req, res) => {
-      const result = await productCollection.find().toArray();
+      // console.log(req.query);
+      const page = parseInt(req.query.page) || 0;
+      const limit = parseInt(req.query.limit) || 12;
+      const skip = page * limit;
+      const result = await productCollection
+        .find()
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+      res.send(result);
+    });
+
+    // local stoeage er data
+    app.post("/productsById", async (req, res) => {
+      const ids = req.body;
+      const objectIds = ids.map((id) => new ObjectId(id));
+      const query = { _id: { $in: objectIds } };
+      console.log(ids);
+      const result = await productCollection.find(query).toArray();
       res.send(result);
     });
 
